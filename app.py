@@ -40,6 +40,10 @@ st.markdown("""
         margin-bottom: 20px;
         border: 1px solid #eee;
     }
+    .product-card h3 {
+        color: #000000;
+        font-weight: bold;
+    }
     .price-tag {
         font-size: 1.4rem;
         font-weight: bold;
