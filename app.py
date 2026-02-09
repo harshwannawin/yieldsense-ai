@@ -98,7 +98,7 @@ def calculate_dynamic_price(item, user_persona, purchase_history):
     if not client: return None
 
     prompt = f"""
-    Act as a Pricing Algorithm. Return ONLY JSON.
+    Act as an advanced Behavioral Dynamic Pricing Algorithm. Return ONLY JSON.
     
     Item: {item['name']}
     Condition: {item['condition']}
@@ -108,11 +108,69 @@ def calculate_dynamic_price(item, user_persona, purchase_history):
     User Persona: {user_persona}
     User History: {purchase_history}
     
-    RULES:
-    1. If Expiry is 'Critical (4 hrs)' AND User is 'Loyal' -> 50% Discount.
-    2. If User is 'Strategic (Waits for deals)' -> NO Discount (Break the habit).
-    3. If Condition is 'Dented' -> 20% Discount for everyone.
-    4. If Expiry is 'Fresh' -> NO Discount.
+    DETAILED PRICING RULES (apply the BEST matching combination):
+
+    === EXPIRY-BASED RULES ===
+    - Fresh (1 Week): No expiry-based discount. Full price.
+    - Medium (3 Days): Mild urgency. Small discounts possible.
+    - High Risk (1 Day): Significant urgency. Moderate discounts.
+    - Critical (4 Hours): Maximum urgency. Aggressive discounts to avoid waste.
+
+    === CONDITION-BASED RULES ===
+    - Perfect: No condition discount.
+    - Slightly Bruised: 10% condition discount.
+    - Dented Box: 20% condition discount.
+
+    === CUSTOMER PERSONA RULES ===
+    - Student (Budget): Give fair discounts on medium/high-risk items to help budget shoppers. 
+      * Fresh + Perfect = 0% off
+      * Fresh + Slightly Bruised = 10% off
+      * Fresh + Dented Box = 15% off
+      * Medium (3 Days) + Perfect = 10% off
+      * Medium (3 Days) + Slightly Bruised = 15% off
+      * Medium (3 Days) + Dented Box = 25% off
+      * High Risk (1 Day) + Perfect = 20% off
+      * High Risk (1 Day) + Slightly Bruised = 30% off
+      * High Risk (1 Day) + Dented Box = 40% off
+      * Critical (4 Hours) + Perfect = 40% off
+      * Critical (4 Hours) + Slightly Bruised = 50% off
+      * Critical (4 Hours) + Dented Box = 60% off
+
+    - Loyal Customer (Premium): Reward loyalty with best deals, especially on expiring items.
+      * Fresh + Perfect = 0% off
+      * Fresh + Slightly Bruised = 10% off
+      * Fresh + Dented Box = 20% off
+      * Medium (3 Days) + Perfect = 15% off
+      * Medium (3 Days) + Slightly Bruised = 20% off
+      * Medium (3 Days) + Dented Box = 30% off
+      * High Risk (1 Day) + Perfect = 25% off
+      * High Risk (1 Day) + Slightly Bruised = 35% off
+      * High Risk (1 Day) + Dented Box = 45% off
+      * Critical (4 Hours) + Perfect = 50% off
+      * Critical (4 Hours) + Slightly Bruised = 60% off
+      * Critical (4 Hours) + Dented Box = 70% off
+
+    - Strategic / Deal Hunter: NEVER give large discounts. They abuse deals.
+      * Fresh (any condition) = 0% off
+      * Medium (3 Days) + Perfect = 0% off
+      * Medium (3 Days) + Slightly Bruised = 5% off
+      * Medium (3 Days) + Dented Box = 10% off
+      * High Risk (1 Day) + Perfect = 5% off
+      * High Risk (1 Day) + Slightly Bruised = 10% off
+      * High Risk (1 Day) + Dented Box = 15% off
+      * Critical (4 Hours) + Perfect = 10% off
+      * Critical (4 Hours) + Slightly Bruised = 15% off
+      * Critical (4 Hours) + Dented Box = 20% off
+
+    === TAGLINE RULES ===
+    - For 0% discount: Mention freshness/quality (e.g., "Farm fresh, premium quality!")
+    - For small discounts (5-15%): Gentle nudge (e.g., "Smart savings on great products!")
+    - For medium discounts (20-35%): Create urgency (e.g., "Limited time deal - grab it now!")
+    - For large discounts (40-50%): Highlight value (e.g., "Incredible value - save big today!")
+    - For maximum discounts (60-70%): Rescue messaging (e.g., "Save this food & your wallet!")
+    - For Deal Hunters with low/no discount: Discourage waiting (e.g., "Best enjoyed fresh at full flavor!")
+
+    IMPORTANT: Calculate final_price by applying discount_percent to base_price. Round to 2 decimals.
     
     JSON Output format:
     {{
