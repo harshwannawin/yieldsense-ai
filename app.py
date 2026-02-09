@@ -211,6 +211,14 @@ elif app_mode == "🛒 Customer Storefront":
             # CALL AI FOR DYNAMIC PRICING
             pricing = calculate_dynamic_price(item, user['type'], user['history'])
             
+            # Fallback if AI pricing fails
+            if pricing is None:
+                pricing = {
+                    "final_price": item['base_price'],
+                    "discount_percent": 0,
+                    "tagline": "Standard Price"
+                }
+            
             # CARD UI
             with st.container():
                 st.markdown(f"""
