@@ -225,20 +225,59 @@ def calculate_dynamic_price(item, user_persona, purchase_history):
 def get_recipe_suggestions(inventory_items):
     """
     Uses Gemini to generate recipe suggestions based on available inventory.
-    Only called when user clicks the button, avoiding rate limits.
+    Includes caching and smart fallback system to avoid rate limits.
     """
-    if not gemini_model:
-        return "Gemini AI is not configured. Please add your API key."
+    # Create cache key based on inventory
+    items_list = [f"{item['name']}|{item['expiry']}" for item in inventory_items]
+    cache_key = "recipes_" + "_".join(sorted(items_list)[:5])  # Use first 5 items for key
     
-    # Create a list of available items
-    items_list = [f"{item['name']} ({item['condition']}, expires in {item['expiry']})" for item in inventory_items]
+    # Check cache first
+    if 'recipe_cache' not in st.session_state:
+        st.session_state.recipe_cache = {}
+    
+    if cache_key in st.session_state.recipe_cache:
+        return "**✨ From Cache:**\n\n" + st.session_state.recipe_cache[cache_key]
+    
+    # Generate fallback recipes based on inventory
+    def generate_fallback_recipes():
+        recipes = "### 🍳 Smart Recipe Suggestions (AI Offline Mode)\n\n"
+        
+        # Find items by urgency
+        critical_items = [i for i in inventory_items if "Critical" in i['expiry'] or "High Risk" in i['expiry']]
+        medium_items = [i for i in inventory_items if "Medium" in i['expiry']]
+        fresh_items = [i for i in inventory_items if "Fresh" in i['expiry']]
+        
+        if critical_items or medium_items:
+            recipes += "**Recipe 1: Quick Kitchen Rescue Bowl** ⏰ *15 minutes*\n"
+            urgent = critical_items[:2] if critical_items else medium_items[:2]
+            recipes += f"- Use: {', '.join([i['name'] for i in urgent])}\n"
+            recipes += "- Perfect for saving food about to expire. Mix with herbs, olive oil, and enjoy!\n\n"
+        
+        if len(inventory_items) >= 2:
+            recipes += "**Recipe 2: Simple Grocery Mix** ⏰ *20 minutes*\n"
+            recipes += f"- Combine: {inventory_items[0]['name']} + {inventory_items[1]['name']}\n"
+            recipes += "- Add salt, pepper, and your favorite seasonings for a quick meal.\n\n"
+        
+        recipes += "**Recipe 3: Fresh Ingredient Smoothie/Salad** ⏰ *10 minutes*\n"
+        if fresh_items:
+            recipes += f"- Feature: {fresh_items[0]['name']}\n"
+        recipes += "- Blend or toss with other fresh ingredients for a healthy option.\n\n"
+        
+        recipes += "*💡 Tip: These are template suggestions. For AI-powered personalized recipes, try again when the API is available!*"
+        return recipes
+    
+    # Try Gemini AI
+    if not gemini_model:
+        return generate_fallback_recipes()
+    
+    items_desc = [f"{item['name']} ({item['condition']}, expires in {item['expiry']})" for item in inventory_items]
     
     prompt = f"""
     You are a creative chef helping reduce food waste. Based on these grocery items available at a store, 
     suggest 3 quick, delicious recipes that use items nearing expiry first.
     
     Available Items:
-    {', '.join(items_list)}
+    {', '.join(items_desc)}
     
     For each recipe, provide:
     1. Recipe name
@@ -251,9 +290,18 @@ def get_recipe_suggestions(inventory_items):
     
     try:
         response = gemini_model.generate_content(prompt)
-        return response.text
+        result = response.text
+        # Cache successful result
+        st.session_state.recipe_cache[cache_key] = result
+        return result
     except Exception as e:
-        return f"Unable to generate recipes at this time. Please try again later."
+        error_msg = str(e).lower()
+        if "quota" in error_msg or "rate" in error_msg or "429" in error_msg:
+            st.warning("⚠️ Gemini API rate limit reached. Showing smart fallback recipes instead.")
+            return generate_fallback_recipes()
+        else:
+            st.error(f"⚠️ Gemini API Error: {str(e)[:100]}")
+            return generate_fallback_recipes()
 
 # ==========================================
 # VIEW 1: SELLER DASHBOARD (Inventory Mgmt)
@@ -333,11 +381,26 @@ elif app_mode == "🛒 Customer Storefront":
     # --- GEMINI-POWERED RECIPE SUGGESTIONS ---
     with st.expander("🍳 Get Recipe Ideas (Powered by Gemini)", expanded=False):
         st.markdown("**Reduce food waste with AI-powered recipe suggestions!**")
-        if st.button("✨ Generate Recipe Ideas", use_container_width=True):
-            with st.spinner("Gemini is cooking up some ideas... 🧑‍🍳"):
-                recipes = get_recipe_suggestions(st.session_state.inventory)
-                st.markdown(recipes)
-                st.success("✅ Recipes generated! Use items before they expire.")
+        
+        col_btn1, col_btn2 = st.columns([3, 1])
+        with col_btn1:
+            if st.button("✨ Generate Recipe Ideas", use_container_width=True):
+                with st.spinner("🧑‍🍳 Generating personalized recipes..."):
+                    recipes = get_recipe_suggestions(st.session_state.inventory)
+                    st.session_state.current_recipes = recipes
+        
+        with col_btn2:
+            if 'recipe_cache' in st.session_state and len(st.session_state.recipe_cache) > 0:
+                if st.button("🔄 Clear Cache", use_container_width=True):
+                    st.session_state.recipe_cache = {}
+                    if 'current_recipes' in st.session_state:
+                        del st.session_state.current_recipes
+                    st.success("Cache cleared!")
+        
+        # Display recipes if available
+        if 'current_recipes' in st.session_state:
+            st.markdown("---")
+            st.markdown(st.session_state.current_recipes)
     
     st.markdown("---")
     
