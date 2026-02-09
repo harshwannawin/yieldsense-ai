@@ -90,10 +90,22 @@ def get_groq_client():
     if not api_key: return None
     return Groq(api_key=api_key)
 
+# Initialize pricing cache in session state
+if 'pricing_cache' not in st.session_state:
+    st.session_state.pricing_cache = {}
+
 def calculate_dynamic_price(item, user_persona, purchase_history):
     """
     Calls Groq to determine price for a specific item + user combo.
+    Uses session state cache to avoid redundant API calls and rate limits.
     """
+    # Create a unique cache key based on item details + persona
+    cache_key = f"{item['name']}|{item['expiry']}|{item['condition']}|{item['base_price']}|{user_persona}"
+    
+    # Return cached result if available
+    if cache_key in st.session_state.pricing_cache:
+        return st.session_state.pricing_cache[cache_key]
+    
     client = get_groq_client()
     if not client: return None
 
@@ -187,8 +199,14 @@ def calculate_dynamic_price(item, user_persona, purchase_history):
             temperature=0.1,
             response_format={"type": "json_object"}
         )
-        return json.loads(completion.choices[0].message.content)
-    except:
+        result = json.loads(completion.choices[0].message.content)
+        # Cache the result
+        st.session_state.pricing_cache[cache_key] = result
+        return result
+    except Exception as e:
+        # If rate limited, show a warning
+        if "rate" in str(e).lower() or "429" in str(e):
+            st.toast("⚠️ AI rate limit reached. Showing cached/standard prices.", icon="⏳")
         return {"final_price": item['base_price'], "discount_percent": 0, "tagline": "Standard Price"}
 
 # ==========================================
