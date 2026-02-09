@@ -251,9 +251,9 @@ if app_mode == "🏪 Seller Dashboard":
         for item in st.session_state.inventory:
             status_color = "red" if "Critical" in item['expiry'] else "green"
             st.markdown(f"""
-            <div style='padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; background: white;'>
+            <div style='padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; background: white; color: black;'>
                 <b>{item['image']} {item['name']}</b> | 💲{item['base_price']} <br>
-                <span style='color:{status_color}'>⏰ {item['expiry']}</span> | 📦 {item['condition']}
+                <span style='color:{status_color}'>⏰ {item['expiry']}</span> | <span style='color: black;'>📦 {item['condition']}</span>
             </div>
             """, unsafe_allow_html=True)
 
