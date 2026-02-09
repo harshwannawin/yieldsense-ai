@@ -308,11 +308,6 @@ if app_mode == "🏪 Seller Dashboard":
 # ==========================================
 elif app_mode == "🛒 Customer Storefront":
     st.title("🛒 EcoCart Shop")
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px;'>
-        <span style='color: white; font-size: 0.9rem;'>🤖 Powered by <b>Google Gemini AI</b> | Intelligent Food Waste Reduction</span>
-    </div>
-    """, unsafe_allow_html=True)
     
     # --- PERSONA SWITCHER (The Magic Trick) ---
     st.markdown("### 👤 Who is shopping?")
@@ -335,34 +330,19 @@ elif app_mode == "🛒 Customer Storefront":
     user = st.session_state.current_user
     st.info(f"Viewing store as: **{user['type']}** (History: {user['history']})")
     
-    # --- GEMINI-POWERED RECIPE SUGGESTIONS (PROMINENT FEATURE) ---
-    st.markdown("---")
-    st.markdown("### 🤖 Google Gemini AI: Recipe Inspiration")
-    col_recipe1, col_recipe2 = st.columns([2, 1])
-    
-    with col_recipe1:
-        st.markdown("""
-        **Transform near-expiry items into tonight's dinner!**  
-        Our Gemini-powered AI analyzes your cart and suggests delicious recipes that help reduce food waste.
-        """)
-    
-    with col_recipe2:
-        if st.button("✨ Get Recipe Ideas", use_container_width=True, type="primary"):
-            with st.spinner("🧑‍🍳 Gemini AI is creating personalized recipes..."):
+    # --- GEMINI-POWERED RECIPE SUGGESTIONS ---
+    with st.expander("🍳 Get Recipe Ideas (Powered by Gemini)", expanded=False):
+        st.markdown("**Reduce food waste with AI-powered recipe suggestions!**")
+        if st.button("✨ Generate Recipe Ideas", use_container_width=True):
+            with st.spinner("Gemini is cooking up some ideas... 🧑‍🍳"):
                 recipes = get_recipe_suggestions(st.session_state.inventory)
-                st.session_state.gemini_recipes = recipes
-    
-    # Display recipes if generated
-    if 'gemini_recipes' in st.session_state and st.session_state.gemini_recipes:
-        with st.expander("📖 Your Personalized Recipes", expanded=True):
-            st.markdown(st.session_state.gemini_recipes)
-            if st.button("🔄 Generate New Recipes"):
-                del st.session_state.gemini_recipes
-                st.rerun()
+                st.markdown(recipes)
+                st.success("✅ Recipes generated! Use items before they expire.")
     
     st.markdown("---")
     
     # --- PRODUCT GRID ---
+    # We trigger the AI Pricing Engine for displayed items
     # We trigger the AI Pricing Engine for displayed items
     
     cols = st.columns(3)
