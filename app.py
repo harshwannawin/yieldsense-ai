@@ -26,8 +26,21 @@ load_dotenv()
 # Get API key from Streamlit secrets (cloud) or environment (local)
 try:
     api_key = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY", ""))
+    gemini_api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
 except:
     api_key = os.getenv("GROQ_API_KEY", "")
+    gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+
+# --- GEMINI SETUP ---
+try:
+    import google.generativeai as genai
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        gemini_model = genai.GenerativeModel('gemini-pro')
+    else:
+        gemini_model = None
+except ImportError:
+    gemini_model = None
 
 # --- CUSTOM CSS (Phone App Look) ---
 st.markdown("""
@@ -209,6 +222,39 @@ def calculate_dynamic_price(item, user_persona, purchase_history):
             st.toast("⚠️ AI rate limit reached. Showing cached/standard prices.", icon="⏳")
         return {"final_price": item['base_price'], "discount_percent": 0, "tagline": "Standard Price"}
 
+def get_recipe_suggestions(inventory_items):
+    """
+    Uses Gemini to generate recipe suggestions based on available inventory.
+    Only called when user clicks the button, avoiding rate limits.
+    """
+    if not gemini_model:
+        return "Gemini AI is not configured. Please add your API key."
+    
+    # Create a list of available items
+    items_list = [f"{item['name']} ({item['condition']}, expires in {item['expiry']})" for item in inventory_items]
+    
+    prompt = f"""
+    You are a creative chef helping reduce food waste. Based on these grocery items available at a store, 
+    suggest 3 quick, delicious recipes that use items nearing expiry first.
+    
+    Available Items:
+    {', '.join(items_list)}
+    
+    For each recipe, provide:
+    1. Recipe name
+    2. Main ingredients from the list
+    3. Quick cooking time (under 30 mins)
+    4. One-line description
+    
+    Focus on items with shorter expiry times. Keep it concise and practical.
+    """
+    
+    try:
+        response = gemini_model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Unable to generate recipes at this time. Please try again later."
+
 # ==========================================
 # VIEW 1: SELLER DASHBOARD (Inventory Mgmt)
 # ==========================================
@@ -283,6 +329,15 @@ elif app_mode == "🛒 Customer Storefront":
     
     user = st.session_state.current_user
     st.info(f"Viewing store as: **{user['type']}** (History: {user['history']})")
+    
+    # --- GEMINI-POWERED RECIPE SUGGESTIONS ---
+    with st.expander("🍳 Get Recipe Ideas (Powered by Gemini)", expanded=False):
+        st.markdown("**Reduce food waste with AI-powered recipe suggestions!**")
+        if st.button("✨ Generate Recipe Ideas", use_container_width=True):
+            with st.spinner("Gemini is cooking up some ideas... 🧑‍🍳"):
+                recipes = get_recipe_suggestions(st.session_state.inventory)
+                st.markdown(recipes)
+                st.success("✅ Recipes generated! Use items before they expire.")
     
     st.markdown("---")
     
