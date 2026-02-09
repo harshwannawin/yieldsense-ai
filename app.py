@@ -378,34 +378,9 @@ elif app_mode == "🛒 Customer Storefront":
     user = st.session_state.current_user
     st.info(f"Viewing store as: **{user['type']}** (History: {user['history']})")
     
-    # --- GEMINI-POWERED RECIPE SUGGESTIONS ---
-    with st.expander("🍳 Get Recipe Ideas (Powered by Gemini)", expanded=False):
-        st.markdown("**Reduce food waste with AI-powered recipe suggestions!**")
-        
-        col_btn1, col_btn2 = st.columns([3, 1])
-        with col_btn1:
-            if st.button("✨ Generate Recipe Ideas", use_container_width=True):
-                with st.spinner("🧑‍🍳 Generating personalized recipes..."):
-                    recipes = get_recipe_suggestions(st.session_state.inventory)
-                    st.session_state.current_recipes = recipes
-        
-        with col_btn2:
-            if 'recipe_cache' in st.session_state and len(st.session_state.recipe_cache) > 0:
-                if st.button("🔄 Clear Cache", use_container_width=True):
-                    st.session_state.recipe_cache = {}
-                    if 'current_recipes' in st.session_state:
-                        del st.session_state.current_recipes
-                    st.success("Cache cleared!")
-        
-        # Display recipes if available
-        if 'current_recipes' in st.session_state:
-            st.markdown("---")
-            st.markdown(st.session_state.current_recipes)
-    
     st.markdown("---")
     
     # --- PRODUCT GRID ---
-    # We trigger the AI Pricing Engine for displayed items
     # We trigger the AI Pricing Engine for displayed items
     
     cols = st.columns(3)
@@ -458,3 +433,29 @@ elif app_mode == "🛒 Customer Storefront":
                     """, unsafe_allow_html=True)
                 
                 st.button(f"Add to Cart", key=f"btn_{item['id']}")
+    
+    # --- GEMINI-POWERED RECIPE SUGGESTIONS (BOTTOM OF PAGE) ---
+    st.markdown("---")
+    st.markdown("---")
+    with st.expander("🍳 Get Recipe Ideas (Powered by Gemini)", expanded=False):
+        st.markdown("**Reduce food waste with AI-powered recipe suggestions!**")
+        
+        col_btn1, col_btn2 = st.columns([3, 1])
+        with col_btn1:
+            if st.button("✨ Generate Recipe Ideas", use_container_width=True):
+                with st.spinner("🧑‍🍳 Generating personalized recipes..."):
+                    recipes = get_recipe_suggestions(st.session_state.inventory)
+                    st.session_state.current_recipes = recipes
+        
+        with col_btn2:
+            if 'recipe_cache' in st.session_state and len(st.session_state.recipe_cache) > 0:
+                if st.button("🔄 Clear Cache", use_container_width=True):
+                    st.session_state.recipe_cache = {}
+                    if 'current_recipes' in st.session_state:
+                        del st.session_state.current_recipes
+                    st.success("Cache cleared!")
+        
+        # Display recipes if available
+        if 'current_recipes' in st.session_state:
+            st.markdown("---")
+            st.markdown(st.session_state.current_recipes)
