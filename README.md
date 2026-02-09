@@ -64,13 +64,26 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-### 3. Environment Variables
+### 3. Configure API Key
 
-To run the app securely, create a `.streamlit/secrets.toml` file or set your key in the Streamlit Cloud Dashboard:
+**For Local Development:**
+
+Create a `.streamlit/secrets.toml` file in the project root:
 
 ```toml
 GROQ_API_KEY = "your_gsk_key_here"
 ```
+
+**For Streamlit Cloud Deployment:**
+
+1. Go to your app dashboard on Streamlit Cloud
+2. Click "⚙️ Settings" → "Secrets"
+3. Add the following:
+```toml
+GROQ_API_KEY = "your_gsk_key_here"
+```
+
+**Note:** The `.streamlit/` directory is already in `.gitignore` to keep your secrets safe.
 
 ## 🛡️ License
 

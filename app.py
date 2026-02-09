@@ -23,6 +23,12 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# Get API key from Streamlit secrets (cloud) or environment (local)
+try:
+    api_key = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY", ""))
+except:
+    api_key = os.getenv("GROQ_API_KEY", "")
+
 # --- CUSTOM CSS (Phone App Look) ---
 st.markdown("""
 <style>
@@ -73,10 +79,6 @@ if 'inventory' not in st.session_state:
 with st.sidebar:
     st.title("📱 EcoCart Navigation")
     app_mode = st.radio("Select View:", ["🏪 Seller Dashboard", "🛒 Customer Storefront"])
-    
-    st.markdown("---")
-    st.caption("Backend AI Configuration")
-    api_key = st.text_input("Groq API Key", type="password", value=os.getenv("GROQ_API_KEY", ""))
 
 # --- AI LOGIC ---
 def get_groq_client():
