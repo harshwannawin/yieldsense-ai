@@ -78,6 +78,7 @@ if 'inventory' not in st.session_state:
         {"id": 1, "name": "Organic Milk", "category": "Dairy", "base_price": 5.00, "expiry": "7 Days", "condition": "Perfect", "image": "🥛"},
         {"id": 2, "name": "Sourdough Bread", "category": "Bakery", "base_price": 4.50, "expiry": "2 Days", "condition": "Good", "image": "🍞"},
     ]
+    st.session_state.next_id = 3  # Track next available ID
 
 # --- SIDEBAR (App Navigation) ---
 with st.sidebar:
@@ -151,9 +152,12 @@ if app_mode == "🏪 Seller Dashboard":
             submitted = st.form_submit_button("Update Inventory")
             
             if submitted:
-                # Add to session state inventory
+                # Remove old duplicates for demo simplicity
+                st.session_state.inventory = [i for i in st.session_state.inventory if i['name'] != name]
+                
+                # Add to session state inventory with unique ID
                 new_item = {
-                    "id": len(st.session_state.inventory) + 1,
+                    "id": st.session_state.next_id,
                     "name": name,
                     "category": "Groceries",
                     "base_price": price,
@@ -161,8 +165,7 @@ if app_mode == "🏪 Seller Dashboard":
                     "condition": condition,
                     "image": "🥑" if "Avocado" in name else "🥛" if "Milk" in name else "🍞"
                 }
-                # Remove old duplicates for demo simplicity
-                st.session_state.inventory = [i for i in st.session_state.inventory if i['name'] != name]
+                st.session_state.next_id += 1  # Increment for next item
                 st.session_state.inventory.insert(0, new_item) # Add to top
                 st.success(f"✅ {name} updated in Live Database!")
 
